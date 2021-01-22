@@ -1,92 +1,125 @@
-section .text
 global _main
+
+extern _printf
 extern _sprintf
-extern _dprintf
+extern _fopen
+extern _fclose
+extern _fprintf
 extern _system
-extern _access
-_main:
-    push    rbx
-    mov     rdi, 5
-    mov     [rel file_num], rdi
-    lea     rdi, [rel check_file]
-    mov     rsi, 0x04
-    call    _access
-    cmp     rax, -1
-    je     create_path
-    mov     rdi, [rel file_num]
-    dec     rdi
-    mov     [rel file_num], rdi
-create_path:
-    lea     rdi, [rel path]
-    lea     rsi, [rel file_name]
-    mov     rdx, [rel file_num]
-    mov     rcx, 's'
-    call    _sprintf
-create_object:
-    lea     rdi, [rel object]
-    lea     rsi, [rel file_name]
-    mov     rdx, [rel file_num]
-    mov     rcx, 'o'
-    call    _sprintf
-create_output:
-    lea     rdi, [rel output]
-    lea     rsi, [rel output_name]
-    mov     rdx, [rel file_num]
-    call    _sprintf
-create_command:
-    lea     rdi, [rel final_cmd]
-    lea     rsi, [rel command]
-    lea     rdx, [rel output]
-    lea     rcx, [rel path]
-    lea     r8, [rel object]
-    call    _sprintf
-create_file:
-    lea rdi, [rel path]
-    mov rsi, 0x202
-    mov rax, 0x2000005
-    mov rdx, 644o
-    syscall
-    mov     rdi, rax
-    lea     rsi, [rel file_content]
-    mov     rdx, 10
-    mov     rcx, 34
-    lea     r8, [rel file_content]
-    mov     r9, [rel file_num]
-    lea     rbx, [rel file_name]
-    push    rbx
-    lea     rbx, [rel output_name]
-    push    rbx
-    lea     rbx, [rel command]
-    push    rbx
-    push    rbx
-    call    _dprintf
-    pop     rbx
-    pop     rbx
-    pop     rbx
-    pop     rbx
-    mov     r12, [rel file_num]
-    cmp     r12, 0
-    jle      exit
-    lea     rdi, [rel final_cmd]
-    call    _system
-exit:
-    pop     rbx
-    ret
+extern _strcmp
+
+section .rodata
+CODE_STR db "global _main%1$c%1$cextern _printf%1$cextern _sprintf%1$cextern _fopen%1$cextern _fclose%1$cextern _fprintf%1$cextern _system%1$cextern _strcmp%1$c%1$csection .rodata%1$cCODE_STR db %2$c%3$s%2$c, 0%1$c%1$cASCII_NL equ 10%1$cASCII_QUOTE equ 34%1$c%1$cSRC_TEMPLATE db %2$cSully_%%d.s%2$c, 0%1$cOBJ_TEMPLATE db %2$cSully_%%d.o%2$c, 0%1$cEXEC_TEMPLATE db %2$cSully_%%d%2$c, 0%1$cCURRENT_FILE db __FILE__, 0%1$cOPEN_PERM db %2$cw%2$c, 0%1$cCOMPILE_TEMPLATE db %2$cnasm -f macho64 %%s && gcc -o %%s %%s && rm %%s%2$c, 0%1$cRUN_TEMPLATE db %2$c./%%s%2$c, 0%1$c%1$csection .data%1$cX_VALUE dq %4$d%1$cRUN_CMD times 200 db 0%1$cCOMPILE_CMD times 400 db 0%1$cOBJ_FILENAME times 100 db 0%1$cSRC_FILENAME times 100 db 0%1$cEXEC_FILENAME times 100 db 0%1$cCURRENT_FILENAME times 100 db 0%1$c%1$csection .text%1$c_main:%1$center 0, 0%1$cpush r12%1$cpush r13%1$cmov r12, qword[rel X_VALUE]%1$c%1$cstop_when_i_null:%1$ccmp r12, 0%1$cjle return%1$c%1$ccheck_is_first:%1$ccreate_current_name:%1$clea rdi, [rel CURRENT_FILENAME]%1$clea rsi, [rel SRC_TEMPLATE]%1$cmov rdx, r12%1$ccall _sprintf%1$c%1$ctry_accessing_file:%1$clea rdi, [rel CURRENT_FILENAME]%1$clea rsi, [rel CURRENT_FILE]%1$ccall _strcmp%1$c%1$ctest rax, rax%1$cjnz create_src_name%1$cdec r12%1$c%1$ccreate_src_name:%1$clea rdi, [rel SRC_FILENAME]%1$clea rsi, [rel SRC_TEMPLATE]%1$cmov rdx, r12%1$ccall _sprintf%1$c%1$ccreate_exec_name:%1$clea rdi, [rel EXEC_FILENAME]%1$clea rsi, [rel EXEC_TEMPLATE]%1$cmov rdx, r12%1$ccall _sprintf%1$c%1$ccreate_obj_name:%1$clea rdi, [rel OBJ_FILENAME]%1$clea rsi, [rel OBJ_TEMPLATE]%1$cmov rdx, r12%1$ccall _sprintf%1$c%1$ccreate_file:%1$clea rdi, [rel SRC_FILENAME]%1$clea rsi, [rel OPEN_PERM]%1$ccall _fopen%1$ctest rax, rax%1$cjz return%1$cmov r13, rax%1$c%1$cmov rdi, r13%1$clea rsi, [rel CODE_STR]%1$cmov rdx, ASCII_NL%1$cmov rcx, ASCII_QUOTE%1$clea r8, [rel CODE_STR]%1$cmov r9, r12%1$ccall _fprintf%1$c%1$cmov rdi, r13%1$ccall _fclose%1$c%1$ccreate_compile_cmd:%1$clea rdi, [rel COMPILE_CMD]%1$clea rsi, [rel COMPILE_TEMPLATE]%1$clea rdx, [rel SRC_FILENAME]%1$clea rcx, [rel EXEC_FILENAME]%1$clea r8, [rel OBJ_FILENAME]%1$clea r9, [rel OBJ_FILENAME]%1$ccall _sprintf%1$c%1$ccreate_run_cmd:%1$clea rdi, [rel RUN_CMD]%1$clea rsi, [rel RUN_TEMPLATE]%1$clea rdx, [rel EXEC_FILENAME]%1$ccall _sprintf%1$c%1$ccompile:%1$clea rdi, [rel COMPILE_CMD]%1$ccall _system%1$c%1$crun_exec:%1$clea rdi, [rel RUN_CMD]%1$ccall _system%1$c%1$creturn:%1$cpop r13%1$cpop r12%1$cleave%1$cret%1$c", 0
+
+ASCII_NL equ 10
+ASCII_QUOTE equ 34
+
+SRC_TEMPLATE db "Sully_%d.s", 0
+OBJ_TEMPLATE db "Sully_%d.o", 0
+EXEC_TEMPLATE db "Sully_%d", 0
+CURRENT_FILE db __FILE__, 0
+OPEN_PERM db "w", 0
+COMPILE_TEMPLATE db "nasm -f macho64 %s && gcc -o %s %s && rm %s", 0
+RUN_TEMPLATE db "./%s", 0
 
 section .data
-check_file:
-db "Sully_5.s", 0
-file_name:
-db "Sully_%d.%c", 0
-output_name:
-db "Sully_%d", 0
-command:
-db "nasm -f macho64 %2$s && gcc -o %1$s %3$s && ./%1$s", 0
-file_content:
-db "section .text%1$cglobal _main%1$cextern _sprintf%1$cextern _dprintf%1$cextern _system%1$cextern _access%1$c_main:%1$c    push    rbx%1$c    mov     rdi, %4$d%1$c    mov     [rel file_num], rdi%1$c    lea     rdi, [rel check_file]%1$c    mov     rsi, 0x04%1$c    call    _access%1$c    cmp     rax, -1%1$c    je     create_path%1$c    mov     rdi, [rel file_num]%1$c    dec     rdi%1$c    mov     [rel file_num], rdi%1$ccreate_path:%1$c    lea     rdi, [rel path]%1$c    lea     rsi, [rel file_name]%1$c    mov     rdx, [rel file_num]%1$c    mov     rcx, 's'%1$c    call    _sprintf%1$ccreate_object:%1$c    lea     rdi, [rel object]%1$c    lea     rsi, [rel file_name]%1$c    mov     rdx, [rel file_num]%1$c    mov     rcx, 'o'%1$c    call    _sprintf%1$ccreate_output:%1$c    lea     rdi, [rel output]%1$c    lea     rsi, [rel output_name]%1$c    mov     rdx, [rel file_num]%1$c    call    _sprintf%1$ccreate_command:%1$c    lea     rdi, [rel final_cmd]%1$c    lea     rsi, [rel command]%1$c    lea     rdx, [rel output]%1$c    lea     rcx, [rel path]%1$c    lea     r8, [rel object]%1$c    call    _sprintf%1$ccreate_file:%1$c    lea rdi, [rel path]%1$c    mov rsi, 0x202%1$c    mov rax, 0x2000005%1$c    mov rdx, 644o%1$c    syscall%1$c    mov     rdi, rax%1$c    lea     rsi, [rel file_content]%1$c    mov     rdx, 10%1$c    mov     rcx, 34%1$c    lea     r8, [rel file_content]%1$c    mov     r9, [rel file_num]%1$c    lea     rbx, [rel file_name]%1$c    push    rbx%1$c    lea     rbx, [rel output_name]%1$c    push    rbx%1$c    lea     rbx, [rel command]%1$c    push    rbx%1$c    push    rbx%1$c    call    _dprintf%1$c    pop     rbx%1$c    pop     rbx%1$c    pop     rbx%1$c    pop     rbx%1$c    mov     r12, [rel file_num]%1$c    cmp     r12, 0%1$c    jle      exit%1$c    lea     rdi, [rel final_cmd]%1$c    call    _system%1$cexit:%1$c    pop     rbx%1$c    ret%1$c%1$csection .data%1$ccheck_file:%1$cdb %2$cSully_5.s%2$c, 0%1$cfile_name:%1$cdb %2$c%8$s%2$c, 0%1$coutput_name:%1$cdb %2$c%7$s%2$c, 0%1$ccommand:%1$cdb %2$c%5$s%2$c, 0%1$cfile_content:%1$cdb %2$c%3$s%2$c, 0%1$csection .bss%1$cfinal_cmd:  resb    255%1$cpath:       resb    15%1$coutput:     resb    15%1$cobject:     resb    15%1$cfile_num:   resb    4%1$c", 0
-section .bss
-final_cmd:  resb    255
-path:       resb    15
-output:     resb    15
-object:     resb    15
-file_num:   resb    4
+X_VALUE dq 5
+RUN_CMD times 200 db 0
+COMPILE_CMD times 400 db 0
+OBJ_FILENAME times 100 db 0
+SRC_FILENAME times 100 db 0
+EXEC_FILENAME times 100 db 0
+CURRENT_FILENAME times 100 db 0
+
+section .text
+_main:
+enter 0, 0
+push r12
+push r13
+mov r12, qword[rel X_VALUE]
+
+stop_when_i_null:
+cmp r12, 0
+jle return
+
+check_is_first:
+create_current_name:
+lea rdi, [rel CURRENT_FILENAME]
+lea rsi, [rel SRC_TEMPLATE]
+mov rdx, r12
+call _sprintf
+
+try_accessing_file:
+lea rdi, [rel CURRENT_FILENAME]
+lea rsi, [rel CURRENT_FILE]
+call _strcmp
+
+test rax, rax
+jnz create_src_name
+dec r12
+
+create_src_name:
+lea rdi, [rel SRC_FILENAME]
+lea rsi, [rel SRC_TEMPLATE]
+mov rdx, r12
+call _sprintf
+
+create_exec_name:
+lea rdi, [rel EXEC_FILENAME]
+lea rsi, [rel EXEC_TEMPLATE]
+mov rdx, r12
+call _sprintf
+
+create_obj_name:
+lea rdi, [rel OBJ_FILENAME]
+lea rsi, [rel OBJ_TEMPLATE]
+mov rdx, r12
+call _sprintf
+
+create_file:
+lea rdi, [rel SRC_FILENAME]
+lea rsi, [rel OPEN_PERM]
+call _fopen
+test rax, rax
+jz return
+mov r13, rax
+
+mov rdi, r13
+lea rsi, [rel CODE_STR]
+mov rdx, ASCII_NL
+mov rcx, ASCII_QUOTE
+lea r8, [rel CODE_STR]
+mov r9, r12
+call _fprintf
+
+mov rdi, r13
+call _fclose
+
+create_compile_cmd:
+lea rdi, [rel COMPILE_CMD]
+lea rsi, [rel COMPILE_TEMPLATE]
+lea rdx, [rel SRC_FILENAME]
+lea rcx, [rel EXEC_FILENAME]
+lea r8, [rel OBJ_FILENAME]
+lea r9, [rel OBJ_FILENAME]
+call _sprintf
+
+create_run_cmd:
+lea rdi, [rel RUN_CMD]
+lea rsi, [rel RUN_TEMPLATE]
+lea rdx, [rel EXEC_FILENAME]
+call _sprintf
+
+compile:
+lea rdi, [rel COMPILE_CMD]
+call _system
+
+run_exec:
+lea rdi, [rel RUN_CMD]
+call _system
+
+return:
+pop r13
+pop r12
+leave
+ret

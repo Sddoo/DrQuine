@@ -1,26 +1,29 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-int main(){
-int i = 5;
-char t[15];
-char o[15];
-char *c = "#include <stdio.h>%1$c#include <string.h>%1$c#include <stdlib.h>%1$c#include <unistd.h>%1$cint main(){%1$cint i = %3$d;%1$cchar t[15];%1$cchar o[15];%1$cchar *c = %2$c%4$s%2$c;%1$cif (i + 1) {%1$cif (access(%2$cSully_5.c%2$c, R_OK) != -1)%1$ci--;%1$cstrcat(t, %2$cSully_%2$c);%1$ct[6] = i + 48;%1$ct[7] = 0;%1$cstrcpy(o, t);%1$cstrcat(t, %2$c.c%2$c);%1$cvoid* fd = fopen(t, %2$cw%2$c);%1$cfprintf(fd, c, 10, 34, i, c, 37);%1$cfclose(fd);%1$cchar cmd[500];%1$csprintf(cmd, %2$cgcc -o %5$cs %5$cs && ./%5$cs%2$c, o, t, o);%1$cif (i)%1$csystem(cmd);%1$c}%1$c}";
-if (i + 1) {
-if (access("Sully_5.c", R_OK) != -1)
-i--;
-strcat(t, "Sully_");
-t[6] = i + 48;
-t[7] = 0;
-strcpy(o, t);
-strcat(t, ".c");
-void* fd = fopen(t, "w");
-fprintf(fd, c, 10, 34, i, c, 37);
-fclose(fd);
-char cmd[500];
-sprintf(cmd, "gcc -o %s %s && ./%s", o, t, o);
-if (i)
-system(cmd);
-}
+#include <string.h>
+
+#define CODE "#include <stdio.h>%1$c#include <stdlib.h>%1$c#include <string.h>%1$c%1$c#define CODE %2$c%3$s%2$c%1$c%1$cint main(void)%1$c{%1$c%5$cint i = %4$d;%1$c%5$cif (i <= 0) return (0);%1$c%5$cchar current_file[100];%1$c%5$csprintf(current_file, %2$cSully_%%d.c%2$c, i);%1$c%5$cif (!strcmp(current_file, __FILE__))i--;%1$c%5$cchar new_src_file[100];%1$c%5$csprintf(new_src_file, %2$cSully_%%d.c%2$c, i);%1$c%5$cchar new_exec[100];%1$c%5$csprintf(new_exec, %2$cSully_%%d%2$c, i);%1$c%5$cFILE *f = fopen(new_src_file, %2$cw%2$c);%1$c%5$cif (f == NULL) return (1);%1$c%5$cfprintf(f, CODE, 10, 34, CODE, i, 9);%1$c%5$cfclose(f);%1$c%5$cchar compile_cmd[300];%1$c%5$csprintf(compile_cmd, %2$cgcc -o %%s %%s%2$c, new_exec, new_src_file);%1$c%5$csystem(compile_cmd);%1$c%5$cchar run_cmd[200];%1$c%5$csprintf(run_cmd, %2$c./%%s%2$c, new_exec);%1$c%5$csystem(run_cmd);%1$c%5$creturn (0);%1$c}%1$c"
+
+int main(void)
+{
+	int i = 5;
+	if (i <= 0) return (0);
+	char current_file[100];
+	sprintf(current_file, "Sully_%d.c", i);
+	if (!strcmp(current_file, __FILE__))i--;
+	char new_src_file[100];
+	sprintf(new_src_file, "Sully_%d.c", i);
+	char new_exec[100];
+	sprintf(new_exec, "Sully_%d", i);
+	FILE *f = fopen(new_src_file, "w");
+	if (f == NULL) return (1);
+	fprintf(f, CODE, 10, 34, CODE, i, 9);
+	fclose(f);
+	char compile_cmd[400];
+	sprintf(compile_cmd, "gcc -o %s %s", new_exec, new_src_file);
+	system(compile_cmd);
+	char run_cmd[300];
+	sprintf(run_cmd, "./%s", new_exec);
+	system(run_cmd);
+	return (0);
 }
